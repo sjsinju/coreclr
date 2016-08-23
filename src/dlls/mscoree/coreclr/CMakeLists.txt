@@ -131,7 +131,7 @@ if(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_EVENT_TRACE)
   )
 endif(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_EVENT_TRACE)
 
-target_link_libraries(coreclr ${CORECLR_LIBRARIES}) 
+target_link_libraries(coreclr ${CORECLR_LIBRARIES} ttrace ttrace-extension) 
 
 if(WIN32)
     # Add dac table & debug resource to coreclr

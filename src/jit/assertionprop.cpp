@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <trace.h>
 /*****************************************************************************
  *
  *  Helper passed to Compiler::fgWalkTreePre() to find the Asgn node for optAddCopies()
@@ -1871,17 +1872,17 @@ Compiler::AssertionIndex Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree
  *  Compute assertions for the JTrue node.
  */
 Compiler::AssertionIndex Compiler::optAssertionGenJtrue(GenTreePtr tree)
-{
+{trace_begin(__FUNCTION__);
     // Only create assertions for JTRUE when we are in the global phase
     if (optLocalAssertionProp)
     {
-        return NO_ASSERTION_INDEX;
+        trace_end();return NO_ASSERTION_INDEX;
     }
 
     GenTreePtr relop = tree->gtOp.gtOp1;
     if ((relop->OperKind() & GTK_RELOP) == 0)
     {
-        return NO_ASSERTION_INDEX;
+        trace_end();return NO_ASSERTION_INDEX;
     }
 
     Compiler::optAssertionKind assertionKind = OAK_INVALID;
@@ -1892,22 +1893,22 @@ Compiler::AssertionIndex Compiler::optAssertionGenJtrue(GenTreePtr tree)
     AssertionIndex index = optCreateJTrueBoundsAssertion(tree);
     if (index != NO_ASSERTION_INDEX)
     {
-        return index;
+        trace_end();return index;
     }
 
     // Find assertion kind.
     switch (relop->gtOper)
     {
-        case GT_EQ:
-            assertionKind = OAK_EQUAL;
-            break;
-        case GT_NE:
-            assertionKind = OAK_NOT_EQUAL;
-            break;
-        default:
-            // TODO-CQ: add other relop operands. Disabled for now to measure perf
-            // and not occupy assertion table slots. We'll add them when used.
-            return NO_ASSERTION_INDEX;
+    case GT_EQ:
+        assertionKind = OAK_EQUAL;
+        break;
+    case GT_NE:
+        assertionKind = OAK_NOT_EQUAL;
+        break;
+    default:
+        // TODO-CQ: add other relop operands. Disabled for now to measure perf
+        // and not occupy assertion table slots. We'll add them when used.
+        trace_end();return NO_ASSERTION_INDEX;
     }
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
@@ -1919,7 +1920,7 @@ Compiler::AssertionIndex Compiler::optAssertionGenJtrue(GenTreePtr tree)
     if ((op1->gtOper == GT_LCL_VAR) &&
         ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
-        return optCreateJtrueAssertions(op1, op2, assertionKind);
+        trace_end();return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
@@ -1931,7 +1932,7 @@ Compiler::AssertionIndex Compiler::optAssertionGenJtrue(GenTreePtr tree)
     // If op1 is ind, then extract op1's oper.
     if ((op1->gtOper == GT_IND) && (op1->gtOp.gtOp1->gtOper == GT_LCL_VAR))
     {
-        return optCreateJtrueAssertions(op1, op2, assertionKind);
+        trace_end();return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
@@ -1943,14 +1944,14 @@ Compiler::AssertionIndex Compiler::optAssertionGenJtrue(GenTreePtr tree)
     if ((op1->gtOper != GT_CALL) || (op1->gtCall.gtCallType != CT_HELPER) || (op1->TypeGet() != TYP_REF) || // op1
         (op2->gtOper != GT_CNS_INT) || (op2->gtIntCon.gtIconVal != 0))                                      // op2
     {
-        return NO_ASSERTION_INDEX;
+        trace_end();return NO_ASSERTION_INDEX;
     }
     if (op1->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE) &&
         op1->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY) &&
         op1->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS) &&
         op1->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY))
     {
-        return NO_ASSERTION_INDEX;
+        trace_end();return NO_ASSERTION_INDEX;
     }
 
     op2 = op1->gtCall.gtCallLateArgs->gtOp.gtOp2;
@@ -1962,10 +1963,10 @@ Compiler::AssertionIndex Compiler::optAssertionGenJtrue(GenTreePtr tree)
 
     if (op1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
     {
-        return optCreateJtrueAssertions(op1, op2, assertionKind);
+        trace_end();return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
 
-    return NO_ASSERTION_INDEX;
+    trace_end();return NO_ASSERTION_INDEX;
 }
 
 /*****************************************************************************
@@ -4330,7 +4331,7 @@ public:
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
-    {
+    {trace_begin(__FUNCTION__);
         JITDUMP("AssertionPropCallback::EndMerge  : BB%02d in -> %s\n\n", block->bbNum,
                 BitVecOps::ToString(apTraits, block->bbAssertionIn));
 
@@ -4362,8 +4363,8 @@ public:
                     BitVecOps::ToString(apTraits, block->bbAssertionOut),
                     BitVecOps::ToString(apTraits, mJumpDestOut[block->bbNum]));
         }
-
-        return changed;
+        
+        trace_end();return changed;
     }
 };
 
@@ -4879,10 +4880,10 @@ GenTreePtr Compiler::optVNAssertionPropCurStmt(BasicBlock* block, GenTreePtr stm
  */
 
 void Compiler::optAssertionPropMain()
-{
+{trace_begin(__FUNCTION__);
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        trace_end();return;
     }
 #ifdef DEBUG
     if (verbose)
@@ -4947,7 +4948,7 @@ void Compiler::optAssertionPropMain()
 
     if (!optAssertionCount)
     {
-        return;
+        trace_end();return;
     }
 
 #ifdef DEBUG
@@ -5090,4 +5091,4 @@ void Compiler::optAssertionPropMain()
     {
         lvaSortAgain = true;
     }
-}
+trace_end();}

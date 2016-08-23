@@ -117,7 +117,7 @@
 
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED
-
+#include <trace.h>
 // Define these macro's to do strict validation for jit lock and class
 // init entry leaks.  This defines determine if the asserts that
 // verify for these leaks are defined or not.  These asserts can
@@ -3378,7 +3378,7 @@ void SystemDomain::SetupDefaultDomain()
 }
 
 HRESULT SystemDomain::SetupDefaultDomainNoThrow()
-{
+{trace_begin("SystemDomain::SetupDefaultDomainNoThrow");
     CONTRACTL
     {
         NOTHROW;
@@ -3394,7 +3394,7 @@ HRESULT SystemDomain::SetupDefaultDomainNoThrow()
     }
     EX_CATCH_HRESULT(hr);
 
-    return hr;
+    trace_end();return hr;
 }
 
 #ifdef _DEBUG
@@ -5704,14 +5704,11 @@ OBJECTREF AppDomain::DoSetup(OBJECTREF* setupInfo)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-
     ADID adid=GetAppDomain()->GetId();
 
     OBJECTREF retval=NULL;
     GCPROTECT_BEGIN(retval);    
-
     ENTER_DOMAIN_PTR(this,ADV_CREATING);
-
     MethodDescCallSite setup(METHOD__APP_DOMAIN__SETUP);
 
     ARG_SLOT args[1];
@@ -5719,7 +5716,9 @@ OBJECTREF AppDomain::DoSetup(OBJECTREF* setupInfo)
     args[0]=ObjToArgSlot(*setupInfo);
 
     OBJECTREF activator;
+    trace_begin("MethodDescCallSite.Call_RetOBJECTREF");
     activator=setup.Call_RetOBJECTREF(args);
+    trace_end();
 #ifdef FEATURE_REMOTING
     if (activator != NULL)
     {
@@ -5741,7 +5740,6 @@ OBJECTREF AppDomain::DoSetup(OBJECTREF* setupInfo)
         GetMulticoreJitManager().AutoStartProfile(this);
     }
 #endif
-
     END_DOMAIN_TRANSITION;
     GCPROTECT_END();
     return retval;

@@ -54,7 +54,7 @@
 #include "clrprivbinderappx.h"
 #include "clrprivtypecachewinrt.h"
 #endif
-
+#include <trace.h>
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
 #ifdef FEATURE_IMPLICIT_TLS
@@ -1571,11 +1571,13 @@ HRESULT CorHost2::_CreateAppDomain(
     HRESULT hr=S_OK;
 
 #ifdef FEATURE_CORECLR
+
     //cannot call the function more than once when single appDomain is allowed
     if (m_fAppDomainCreated && (m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
     {
         return HOST_E_INVALIDOPERATION;
     }
+
 #endif
 
     //normalize empty strings
@@ -1587,10 +1589,10 @@ HRESULT CorHost2::_CreateAppDomain(
         return E_POINTER;
 
 #ifdef FEATURE_CORECLR
+
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
 #endif // FEATURE_CORECLR
-
     if(wszFriendlyName == NULL)
         return E_INVALIDARG;
 
@@ -1603,47 +1605,59 @@ HRESULT CorHost2::_CreateAppDomain(
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
     AppDomainCreationHolder<AppDomain> pDomain;
-
+    
 #ifdef FEATURE_CORECLR
+
     // If StartupFlag specifies single appDomain then return the default domain instead of creating new one
     if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
     {
+
         pDomain.Assign(SystemDomain::System()->DefaultDomain());
+
     }
     else
 #endif
     {
+
         AppDomain::CreateUnmanagedObject(pDomain);
+
     }
 
     ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
 
 #ifdef FEATURE_CORECLR
+
     if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
     {
         pDomain->SetIgnoreUnhandledExceptions();
+
     }
+
 #endif // FEATURE_CORECLR
 
     if (dwFlags & APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE)
         pDomain->SetReversePInvokeCannotEnter();
 
+
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
 #if !defined(FEATURE_CORECLR)
+
     if (pBinder != NULL)
         pDomain->SetLoadContextHostBinder(pBinder);
+
 #endif
-        
+
 #ifdef PROFILING_SUPPORTED
     EX_TRY
 #endif    
     {
         pDomain->SetAppDomainManagerInfo(wszAppDomainManagerAssemblyName,wszAppDomainManagerTypeName,eInitializeNewDomainFlags_None);
-
+	
+	
         GCX_COOP();
-    
+  
         struct 
         {
             STRINGREF friendlyName;
@@ -1655,10 +1669,10 @@ HRESULT CorHost2::_CreateAppDomain(
         } _gc;
 
         ZeroMemory(&_gc,sizeof(_gc));
-
         GCPROTECT_BEGIN(_gc)
         _gc.friendlyName=StringObject::NewString(wszFriendlyName);
-        
+
+
         if(nProperties>0)
         {
             _gc.propertyNames = (PTRARRAYREF) AllocateObjectArray(nProperties, g_pStringClass);
@@ -1684,6 +1698,7 @@ HRESULT CorHost2::_CreateAppDomain(
 
         MethodDescCallSite prepareDataForSetup(METHOD__APP_DOMAIN__PREPARE_DATA_FOR_SETUP);
 
+
         ARG_SLOT args[8];
         args[0]=ObjToArgSlot(_gc.friendlyName);
         args[1]=ObjToArgSlot(NULL);
@@ -1699,6 +1714,7 @@ HRESULT CorHost2::_CreateAppDomain(
         args[6]=ObjToArgSlot(_gc.propertyNames);
         args[7]=ObjToArgSlot(_gc.propertyValues);
 
+trace_begin("_CreateAppDomain-Call_RetOBJECTREF");
         _gc.setupInfo=prepareDataForSetup.Call_RetOBJECTREF(args);
 
         //
@@ -1706,20 +1722,19 @@ HRESULT CorHost2::_CreateAppDomain(
         //
         PTRARRAYREF handleArrayObj = (PTRARRAYREF) ObjectToOBJECTREF(_gc.setupInfo);
         _gc.adSetup = ObjectToOBJECTREF(handleArrayObj->GetAt(1));
-
+trace_end();
 #ifndef FEATURE_CORECLR
+
         // We need to setup domain sorting before any other managed code runs in the domain, since that code 
         // could end up caching data based on the sorting mode of the domain.
         pDomain->InitializeSorting(&_gc.adSetup);
         pDomain->InitializeHashing(&_gc.adSetup);
+      
 #endif
 
         pDomain->DoSetup(&_gc.setupInfo);
-
         pDomain->CacheStringsForDAC();
-        
         GCPROTECT_END();
-
         *pAppDomainID=pDomain->GetId().m_dwId;
 
 #ifdef FEATURE_CORECLR
@@ -1758,7 +1773,6 @@ HRESULT CorHost2::_CreateAppDomain(
     END_EXTERNAL_ENTRYPOINT;
 
     END_ENTRYPOINT_NOTHROW;
-
     return hr;
 
 };

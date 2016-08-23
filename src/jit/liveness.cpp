@@ -11,6 +11,7 @@
 #pragma hdrstop
 #endif
 
+#include <trace.h>
 /*****************************************************************************
  *
  *  Helper for Compiler::fgPerBlockLocalVarLiveness().
@@ -168,7 +169,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree, GenTree* asgdLclVar)
 
 /*****************************************************************************/
 void Compiler::fgLocalVarLiveness()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -216,7 +217,7 @@ void Compiler::fgLocalVarLiveness()
     }
 
     EndPhase(PHASE_LCLVARLIVENESS_INTERBLOCK);
-}
+trace_end();}
 
 /*****************************************************************************/
 void Compiler::fgLocalVarLivenessInit()
@@ -466,7 +467,7 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
 
 /*****************************************************************************/
 void Compiler::fgPerBlockLocalVarLiveness()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -522,7 +523,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                     break;
             }
         }
-        return;
+        trace_end();return;
     }
 
 #endif // CAN_DISABLE_DFA
@@ -664,7 +665,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::MakeEmpty(this));
         block->bbHeapLiveIn = false;
     }
-}
+trace_end();}
 
 /*****************************************************************************/
 #ifdef DEBUGGING_SUPPORT
@@ -1191,7 +1192,7 @@ VARSET_VALRET_TP Compiler::fgGetHandlerLiveVars(BasicBlock* block)
  */
 
 void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
-{
+{trace_begin(__FUNCTION__);
     BasicBlock* block;
     bool        change;
 #ifdef DEBUG
@@ -1360,7 +1361,7 @@ void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
     }
 
 #endif // DEBUG
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -1842,7 +1843,7 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
                                          GenTreePtr       endNode,
                                          VARSET_VALARG_TP volatileVars,
                                          bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
-{
+{trace_begin(__FUNCTION__);
     GenTreePtr tree;
     unsigned   lclNum;
 
@@ -1891,7 +1892,7 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
     }
 
     // Return the set of live variables out of this statement
-    return life;
+    trace_end();return life;
 }
 
 #else // LEGACY_BACKEND
@@ -1906,7 +1907,7 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
                                          GenTreePtr       endNode,
                                          VARSET_VALARG_TP volatileVars,
                                          bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
-{
+{trace_begin(__FUNCTION__);
     GenTreePtr tree;
     unsigned   lclNum;
 
@@ -2236,7 +2237,7 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
 
     /* Return the set of live variables out of this statement */
 
-    return life;
+    trace_end();return life;
 }
 
 #ifdef _PREFAST_
@@ -2681,7 +2682,7 @@ bool Compiler::fgRemoveDeadStore(
  *  check index expressions.
  */
 void Compiler::fgInterBlockLocalVarLiveness()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -2937,7 +2938,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
     }
 
     fgLocalVarLivenessDone = true;
-}
+trace_end();}
 
 #ifdef DEBUG
 

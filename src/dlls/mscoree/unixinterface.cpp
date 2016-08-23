@@ -18,7 +18,7 @@
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
-
+#include <trace.h>
 typedef int (STDMETHODCALLTYPE *HostMain)(
     const int argc,
     const wchar_t** argv
@@ -179,7 +179,7 @@ int coreclr_initialize(
     // calling any other APIs because they can end up calling into the PAL layer again.
     if (FAILED(hr))
     {
-        return hr;
+				return hr;
     }
 #endif
 
@@ -189,6 +189,7 @@ int coreclr_initialize(
     IfFailRet(hr);
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
+
 
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
@@ -203,9 +204,12 @@ int coreclr_initialize(
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
     // Fetch the path to JIT binary, if specified
     g_CLRJITPath = Configuration::GetKnobStringValue(W("JIT_PATH"));
+
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+
 
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);
@@ -263,6 +267,7 @@ int coreclr_initialize(
         }
         hr = S_OK; // We don't need to fail if we can't create delegate
 #endif
+
     }
     return hr;
 }
@@ -281,7 +286,7 @@ extern "C"
 int coreclr_shutdown(
             void* hostHandle,
             unsigned int domainId)
-{
+{trace_begin(__FUNCTION__);
     ReleaseHolder<ICLRRuntimeHost2> host(reinterpret_cast<ICLRRuntimeHost2*>(hostHandle));
 
     HRESULT hr = host->UnloadAppDomain(domainId, true); // Wait until done
@@ -293,7 +298,7 @@ int coreclr_shutdown(
     PAL_Shutdown();
 #endif
 
-    return hr;
+    trace_end();return hr;
 }
 
 //
@@ -357,10 +362,10 @@ int coreclr_execute_assembly(
             const char** argv,
             const char* managedAssemblyPath,
             unsigned int* exitCode)
-{
+{trace_begin(__FUNCTION__);
     if (exitCode == NULL)
     {
-        return HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER);
+        trace_end();return HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER);
     }
     *exitCode = -1;
 
@@ -374,5 +379,5 @@ int coreclr_execute_assembly(
     HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, (DWORD *)exitCode);
     IfFailRet(hr);
 
-    return hr;
+    trace_end();return hr;
 }

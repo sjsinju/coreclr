@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #ifdef _TARGET_ARMARCH_
-
+#include <trace.h>
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -344,13 +344,13 @@ void Compiler::unwindPadding()
 // Ask the VM to reserve space for the unwind information for the function and
 // all its funclets.
 void Compiler::unwindReserve()
-{
+{trace_begin(__FUNCTION__);
     assert(compFuncInfoCount > 0);
     for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
     {
         unwindReserveFunc(funGetFunc(funcIdx));
     }
-}
+trace_end();}
 
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
@@ -400,12 +400,12 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 //      pColdCode: Pointer to the beginning of the memory with the function and funclet cold code.
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
-{
+{trace_begin(__FUNCTION__);
     assert(compFuncInfoCount > 0);
     for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
     {
         unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
-    }
+    }trace_end();
 }
 
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
@@ -1053,7 +1053,7 @@ bool UnwindFragmentInfo::IsAtFragmentEnd(UnwindEpilogInfo* pEpi)
 // unwind block.
 
 void UnwindFragmentInfo::MergeCodes()
-{
+{trace_begin(__FUNCTION__);
     assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
 
     unsigned epilogCount     = 0;
@@ -1180,7 +1180,7 @@ void UnwindFragmentInfo::MergeCodes()
     ufiNeedExtendedCodeWordsEpilogCount = needExtendedCodeWordsEpilogCount;
     ufiCodeWords                        = codeWords;
     ufiEpilogScopes                     = epilogScopes;
-}
+trace_end();}
 
 // Finalize: Prepare the unwind information for the VM. Compute and prepend the unwind header.
 
@@ -1337,7 +1337,7 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 }
 
 void UnwindFragmentInfo::Reserve(BOOL isFunclet, bool isHotCode)
-{
+{trace_begin(__FUNCTION__);
     assert(isHotCode || !isFunclet); // TODO-CQ: support hot/cold splitting in functions with EH
 
     MergeCodes();
@@ -1355,7 +1355,7 @@ void UnwindFragmentInfo::Reserve(BOOL isFunclet, bool isHotCode)
 #endif
 
     uwiComp->eeReserveUnwindInfo(isFunclet, isColdCode, unwindSize);
-}
+trace_end();}
 
 // Allocate the unwind info for a fragment with the VM.
 // Arguments:
@@ -1680,7 +1680,7 @@ void UnwindInfo::Split()
 // Reserve space for the unwind info for all fragments
 
 void UnwindInfo::Reserve(BOOL isFunclet, bool isHotCode)
-{
+{trace_begin(__FUNCTION__);
     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
     assert(isHotCode || !isFunclet);
 
@@ -1688,7 +1688,7 @@ void UnwindInfo::Reserve(BOOL isFunclet, bool isHotCode)
     {
         pFrag->Reserve(isFunclet, isHotCode);
     }
-}
+trace_end();}
 
 // Allocate and populate VM unwind info for all fragments
 

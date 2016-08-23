@@ -33,6 +33,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfoencoder.h"
 #endif
 
+#include <trace.h>
+
 /*****************************************************************************
  *
  *  Determine what variables die between beforeSet and afterSet, and
@@ -620,7 +622,7 @@ void CodeGen::genMulRegBy(regNumber reg, ssize_t ival, GenTreePtr tree, var_type
 
 void CodeGen::genComputeReg(
     GenTreePtr tree, regMaskTP needReg, RegSet::ExactReg mustReg, RegSet::KeepReg keepReg, bool freeOnly)
-{
+{trace_begin(__FUNCTION__);
     noway_assert(tree->gtType != TYP_VOID);
 
     regNumber reg;
@@ -741,7 +743,7 @@ REG_OK:
 
         regSet.rsMarkRegUsed(tree);
     }
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -4934,7 +4936,7 @@ REG_LOADED:
  */
 
 void CodeGen::genCodeForTreeLeaf(GenTreePtr tree, regMaskTP destReg, regMaskTP bestReg)
-{
+{trace_begin(__FUNCTION__);
     genTreeOps oper    = tree->OperGet();
     regNumber  reg     = DUMMY_INIT(REG_CORRUPT);
     regMaskTP  regs    = regSet.rsMaskUsed;
@@ -4956,7 +4958,7 @@ void CodeGen::genCodeForTreeLeaf(GenTreePtr tree, regMaskTP destReg, regMaskTP b
             if (genMarkLclVar(tree))
             {
                 genCodeForTree_REG_VAR1(tree);
-                return;
+                trace_end();return;
             }
 
 #if REDUNDANT_LOAD
@@ -5116,7 +5118,7 @@ void CodeGen::genCodeForTreeLeaf(GenTreePtr tree, regMaskTP destReg, regMaskTP b
 
         case GT_JMP:
             genCodeForTreeLeaf_GT_JMP(tree);
-            return;
+            trace_end();return;
 
         case GT_MEMORYBARRIER:
             // Emit the memory barrier instruction
@@ -5133,6 +5135,7 @@ void CodeGen::genCodeForTreeLeaf(GenTreePtr tree, regMaskTP destReg, regMaskTP b
 
     noway_assert(reg != DUMMY_INIT(REG_CORRUPT));
     genCodeForTree_DONE(tree, reg);
+trace_end();
 }
 
 GenTreePtr CodeGen::genCodeForCommaTree(GenTreePtr tree)
@@ -11230,7 +11233,7 @@ void CodeGen::genStoreFromFltRetRegs(GenTreePtr tree)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
 void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
-{
+{trace_begin(__FUNCTION__);
     noway_assert(tree->gtOper == GT_ASG);
 
     GenTreePtr  op1     = tree->gtOp.gtOp1;
@@ -11254,7 +11257,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
         // from a CALL, we use assignment, var = (hfa) call();
         assert(compiler->IsHfa(tree));
         genStoreFromFltRetRegs(tree);
-        return;
+        trace_end();return;
     }
 #endif
 
@@ -11955,7 +11958,7 @@ LExit:
     if (lclVarNum < compiler->lvaCount)
         siCheckVarScope(lclVarNum, lclILoffs);
 #endif
-}
+trace_end();}
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
@@ -11966,7 +11969,7 @@ LExit:
  */
 
 void CodeGen::genCodeForTreeSmpOpAsg_DONE_ASSG(GenTreePtr tree, regMaskTP addrReg, regNumber reg, bool ovfl)
-{
+{trace_begin(__FUNCTION__);
     const var_types treeType = tree->TypeGet();
     GenTreePtr      op1      = tree->gtOp.gtOp1;
     GenTreePtr      op2      = tree->gtOp.gtOp2;
@@ -12019,7 +12022,7 @@ void CodeGen::genCodeForTreeSmpOpAsg_DONE_ASSG(GenTreePtr tree, regMaskTP addrRe
             genCheckOverflow(tree);
         }
     }
-}
+trace_end();}
 
 /*****************************************************************************
  *

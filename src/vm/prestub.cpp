@@ -56,7 +56,7 @@
 
 EXTERN_C void STDCALL ThePreStub();
 EXTERN_C void STDCALL ThePreStubPatch();
-
+#include <trace.h>
 //==========================================================================
 
 PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BOOL fFullBackPatch)
@@ -253,7 +253,7 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
 
 
 PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWORD flags2)
-{
+{trace_begin(__FUNCTION__);
     STANDARD_VM_CONTRACT;
 
     BOOL fIsILStub = IsILStub();        // @TODO: understand the need for this special case
@@ -639,7 +639,7 @@ Done:
     LOG((LF_CORDB, LL_EVERYTHING, "MethodDesc::MakeJitWorker finished. Stub is" FMT_ADDR "\n",
          DBG_ADDR(pCode)));
 
-    return pCode;
+    trace_end();return pCode;
 }
 
 #ifdef FEATURE_STUBS_AS_IL

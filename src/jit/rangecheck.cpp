@@ -6,7 +6,7 @@
 
 #include "jitpch.h"
 #include "rangecheck.h"
-
+#include <trace.h>
 // Max stack depth (path length) in walking the UD chain.
 static const int MAX_SEARCH_DEPTH = 100;
 
@@ -1023,12 +1023,12 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePt
 
 // Check if the var definition the rhs involves arithmetic that overflows.
 bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
-{
+{trace_begin(__FUNCTION__);
     // Get the definition.
     Location* loc = GetDef(expr);
     if (loc == nullptr)
     {
-        return true;
+        trace_end();return true;
     }
     // Get the parent node which is an asg.
     GenTreePtr asg = loc->parent;
@@ -1036,21 +1036,21 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreeP
     switch (asg->OperGet())
     {
         case GT_ASG:
-            return DoesOverflow(loc->block, loc->stmt, asg->gtGetOp2(), path);
+            trace_end();return DoesOverflow(loc->block, loc->stmt, asg->gtGetOp2(), path);
 
         case GT_ASG_ADD:
             // For GT_ASG_ADD, op2 is use, op1 is also use since we side table for defs in useasg case.
-            return DoesBinOpOverflow(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), path);
+            trace_end();return DoesBinOpOverflow(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), path);
 
         default:
             // All other 'asg->OperGet()' kinds, conservatively return true
             break;
     }
-    return true;
+    trace_end();return true;
 }
 
 bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
-{
+{trace_begin(__FUNCTION__);
     for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
     {
         GenTreePtr arg = args->Current();
@@ -1060,24 +1060,24 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr 
         }
         if (DoesOverflow(block, stmt, args->Current(), path))
         {
-            return true;
+            trace_end();return true;
         }
     }
-    return false;
+    trace_end();return false;
 }
 
 bool RangeCheck::DoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
-{
+{trace_begin(__FUNCTION__);
     bool overflows = false;
     if (!GetOverflowMap()->Lookup(expr, &overflows))
     {
         overflows = ComputeDoesOverflow(block, stmt, expr, path);
     }
-    return overflows;
+    trace_end();return overflows;
 }
 
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
-{
+{trace_begin(__FUNCTION__);
     JITDUMP("Does overflow %p?\n", dspPtr(expr));
     path->Set(expr, block);
 
@@ -1112,7 +1112,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTree
     }
     GetOverflowMap()->Set(expr, overflows);
     path->Remove(expr);
-    return overflows;
+    trace_end();return overflows;
 }
 
 struct Node

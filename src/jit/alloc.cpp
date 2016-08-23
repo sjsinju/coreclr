@@ -7,7 +7,7 @@
 #if defined(_MSC_VER)
 #pragma hdrstop
 #endif // defined(_MSC_VER)
-
+#include <trace.h>
 //------------------------------------------------------------------------
 // PooledAllocator:
 //    This subclass of `ArenaAllocator` is a singleton that always keeps
@@ -538,7 +538,7 @@ ArenaAllocator* PooledAllocator::getPooledAllocator(IEEMemoryManager* memoryMana
 //    Performs any necessary teardown for an `PooledAllocator` and returns the allocator
 //    to the pool.
 void PooledAllocator::destroy()
-{
+{trace_begin(__FUNCTION__);
     assert(isInitialized());
     assert(this == &s_pooledAllocator);
     assert(s_pooledAllocatorState == POOLED_ALLOCATOR_IN_USE || s_pooledAllocatorState == POOLED_ALLOCATOR_SHUTDOWN);
@@ -568,7 +568,7 @@ void PooledAllocator::destroy()
     {
         InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_AVAILABLE);
     }
-}
+trace_end();}
 
 //------------------------------------------------------------------------
 // ArenaAllocator::getPooledAllocator:

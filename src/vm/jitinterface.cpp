@@ -7,7 +7,6 @@
 
 // ===========================================================================
 
-
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -97,6 +96,7 @@ static const char *const hlpNameTable[CORINFO_HELP_COUNT] = {
 };
 #endif
 
+#include <trace.h>
 #ifdef DACCESS_COMPILE
 
 // The real definitions are in jithelpers.cpp. However, those files are not included in the DAC build.
@@ -12346,7 +12346,7 @@ BOOL g_fAllowRel32 = TRUE;
 
 PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader,
                         DWORD flags, DWORD flags2, ULONG * pSizeOfCode)
-{
+{trace_begin(__FUNCTION__);
     STANDARD_VM_CONTRACT;
 
     PCODE ret = NULL;
@@ -12726,7 +12726,7 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader,
 #endif // _DEBUG
 
     COOPERATIVE_TRANSITION_END();
-    return ret;
+    trace_end();return ret;
 }
 
 extern "C" unsigned __stdcall PartialNGenStressPercentage()

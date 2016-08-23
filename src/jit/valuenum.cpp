@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "valuenum.h"
 #include "ssaconfig.h"
-
+#include <trace.h>
 VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
 {
     if (!isUnsigned || (oper == GT_EQ) || (oper == GT_NE))
@@ -518,15 +518,15 @@ void ValueNumStore::VNPUnpackExc(ValueNumPair vnWx, ValueNumPair* pvn, ValueNumP
 }
 
 ValueNum ValueNumStore::VNNormVal(ValueNum vn)
-{
+{trace_begin(__FUNCTION__);
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.m_func == VNF_ValWithExc)
     {
-        return funcApp.m_args[0];
+        trace_end();return funcApp.m_args[0];
     }
     else
     {
-        return vn;
+        trace_end();return vn;
     }
 }
 
@@ -4066,7 +4066,7 @@ struct ValueNumberState
 };
 
 void Compiler::fgValueNumber()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     // This could be a JITDUMP, but some people find it convenient to set a breakpoint on the printf.
     if (verbose)
@@ -4078,7 +4078,7 @@ void Compiler::fgValueNumber()
     // If we skipped SSA, skip VN as well.
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        trace_end();return;
     }
 
     // Allocate the value number store.
@@ -4246,10 +4246,10 @@ void Compiler::fgValueNumber()
 #endif // DEBUG
 
     fgVNPassesCompleted++;
-}
+trace_end();}
 
 void Compiler::fgValueNumberBlock(BasicBlock* blk, bool newVNsForPhis)
-{
+{trace_begin(__FUNCTION__);
     compCurBB = blk;
 
 #ifdef DEBUG
@@ -4489,7 +4489,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk, bool newVNsForPhis)
     }
 
     compCurBB = nullptr;
-}
+trace_end();}
 
 ValueNum Compiler::fgHeapVNForLoopSideEffects(BasicBlock* entryBlock, unsigned innermostLoopNum)
 {
@@ -4690,7 +4690,7 @@ void Compiler::fgValueNumberRecordHeapSsa(GenTreePtr tree)
 // The input 'tree' is a leaf node that is a constant
 // Assign the proper value number to the tree
 void Compiler::fgValueNumberTreeConst(GenTreePtr tree)
-{
+{trace_begin(__FUNCTION__);
     genTreeOps oper = tree->OperGet();
     var_types  typ  = tree->TypeGet();
     assert(GenTree::OperIsConst(oper));
@@ -4755,7 +4755,7 @@ void Compiler::fgValueNumberTreeConst(GenTreePtr tree)
 
         default:
             unreached();
-    }
+    }trace_end();
 }
 
 //------------------------------------------------------------------------
@@ -6787,7 +6787,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 }
 
 void Compiler::fgValueNumberCall(GenTreeCall* call)
-{
+{trace_begin(__FUNCTION__);
     // First: do value numbering of any argument placeholder nodes in the argument list
     // (by transferring from the VN of the late arg that they are standing in for...)
     unsigned        i               = 0;
@@ -6857,18 +6857,18 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         // For now, arbitrary side effect on Heap.
         fgMutateHeap(call DEBUGARG("CALL"));
     }
-}
+trace_end();}
 
 void Compiler::fgUpdateArgListVNs(GenTreeArgList* args)
-{
+{trace_begin(__FUNCTION__);
     if (args == nullptr)
     {
-        return;
+        trace_end();return;
     }
     // Otherwise...
     fgUpdateArgListVNs(args->Rest());
     fgValueNumberTree(args);
-}
+trace_end();}
 
 VNFunc Compiler::fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc)
 {

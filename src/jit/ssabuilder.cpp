@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "ssaconfig.h"
 #include "ssarenamestate.h"
 #include "ssabuilder.h"
-
+#include <trace.h>
 namespace
 {
 /**
@@ -153,7 +153,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 // =================================================================================
 
 void Compiler::fgSsaBuild()
-{
+{trace_begin(__FUNCTION__);
     IAllocator* pIAllocator = new (this, CMK_SSA) CompAllocator(this, CMK_SSA);
 
     // If this is not the first invocation, reset data structures for SSA.
@@ -176,7 +176,7 @@ void Compiler::fgSsaBuild()
         fgDispBasicBlocks(/*dumpTrees*/ true);
     }
 #endif // DEBUG
-}
+trace_end();}
 
 void Compiler::fgResetForSsa()
 {
@@ -710,7 +710,7 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
  * @param count The size of valid elements in the postOrder array.
  */
 void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
-{
+{trace_begin(__FUNCTION__);
     JITDUMP("*************** In SsaBuilder::InsertPhiFunctions()\n");
 
     // Compute liveness on the graph.
@@ -815,7 +815,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
         }
     }
     EndPhase(PHASE_BUILD_SSA_INSERT_PHIS);
-}
+trace_end();}
 
 #ifdef SSA_FEATURE_USEDEF
 /**
@@ -1669,7 +1669,7 @@ void SsaBuilder::Print(BasicBlock** postOrder, int count)
  *      and Destruction of Static Single Assignment Form."
  */
 void SsaBuilder::Build()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (m_pCompiler->verbose)
     {
@@ -1717,7 +1717,7 @@ void SsaBuilder::Build()
         Print(postOrder, count);
     }
 #endif
-}
+trace_end();}
 
 void SsaBuilder::SetupBBRoot()
 {

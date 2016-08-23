@@ -59,7 +59,7 @@
 GVAL_IMPL(DWORD, g_MiniMetaDataBuffMaxSize);
 GVAL_IMPL(TADDR, g_MiniMetaDataBuffAddress);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-
+#include <trace.h>
 // forward decl
 bool FixupSignatureContainingInternalTypes(
     DataImage *     image, 
@@ -1036,11 +1036,11 @@ DoVerify:
 //*******************************************************************************
 
 BOOL MethodDesc::IsVerifiable()
-{
+{trace_begin(__FUNCTION__);
     STANDARD_VM_CONTRACT;
 
     if (IsVerified())
-        return (m_wFlags & mdcVerifiable);
+        {trace_end();return (m_wFlags & mdcVerifiable);}
 
     if (!IsTypicalMethodDefinition())
     {
@@ -1053,7 +1053,7 @@ BOOL MethodDesc::IsVerifiable()
         // concrete instantiation
         SetIsVerified(isVerifiable);
 
-        return isVerifiable;
+        trace_end();return isVerifiable;
     }
 
     COR_ILMETHOD_DECODER *pHeader = NULL;
@@ -1081,7 +1081,7 @@ BOOL MethodDesc::IsVerifiable()
     UnsafeJitFunction(this, pHeader, CORJIT_FLG_IMPORT_ONLY, 0);
     _ASSERTE(IsVerified());
 
-    return (IsVerified() && (m_wFlags & mdcVerifiable));
+    trace_end();return (IsVerified() && (m_wFlags & mdcVerifiable));
 }
 
 //*******************************************************************************

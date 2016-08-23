@@ -16,7 +16,7 @@
 // To include declaration of "SignatureNative"
 #include "runtimehandles.h"
 
-
+#include <trace.h>
 #if defined(FEATURE_MULTICOREJIT) && defined(_DEBUG)
 
 // Allow system module, and first party WinMD files for Appx
@@ -68,7 +68,7 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 void CallDescrWorkerWithHandler(
                 CallDescrData *   pCallDescrData,
                 BOOL              fCriticalCall)
-{
+{trace_begin("CallDescrWorkerWithHandler 1");
     STATIC_CONTRACT_SO_INTOLERANT;
 
 #if defined(FEATURE_MULTICOREJIT) && defined(_DEBUG)
@@ -80,13 +80,16 @@ void CallDescrWorkerWithHandler(
     }
 
 #endif
-
-
+trace_end();
+trace_begin("CallDescrWorkerWithHandler 2");
     BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
-
+trace_end();
+trace_begin("CallDescrWorkerWithHandler 3");
     CallDescrWorker(pCallDescrData);
-
+trace_end();
+trace_begin("CallDescrWorkerWithHandler 4");
     END_CALL_TO_MANAGED();
+    trace_end();
 }
 
 
@@ -95,7 +98,7 @@ void CallDescrWorkerWithHandler(
 //*******************************************************************************
 // assembly code, in i386/asmhelpers.asm
 void CallDescrWorker(CallDescrData * pCallDescrData)
-{
+{trace_begin("CallDescrWorker 1");
     //
     // This function must not have a contract ... it's caller has pushed an FS:0 frame (COMPlusFrameHandler) that must
     // be the first handler on the stack. The contract causes, at a minimum, a C++ exception handler to be pushed to
@@ -113,15 +116,19 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_SO_TOLERANT;
-
+    trace_end();
+trace_begin("CallDescrWorker 2");
     _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
-
+trace_end();
+trace_begin("CallDescrWorker 3");
     TRIGGERSGC_NOSTOMP(); // Can't stomp object refs because they are args to the function
-
+trace_end();
     // Save a copy of dangerousObjRefs in table.
+    trace_begin("CallDescrWorker 4");
     Thread* curThread;
     DWORD_PTR ObjRefTable[OBJREF_TABSIZE];
-
+trace_end();
+trace_begin("CallDescrWorker 5");
     curThread = GetThread();
     _ASSERTE(curThread != NULL);
 
@@ -140,15 +147,18 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 #ifdef _TARGET_ARM_
     _ASSERTE(IsThumbCode(pCallDescrData->pTarget));
 #endif
-
+trace_end();
+trace_begin("CallDescrWorker 6");
     CallDescrWorkerInternal(pCallDescrData);
-
+trace_end();
     // Restore dangerousObjRefs when we return back to EE after call
     memcpy(curThread->dangerousObjRefs, ObjRefTable, sizeof(ObjRefTable));
-
+trace_begin("CallDescrWorker 7");
     TRIGGERSGC();
-
+trace_end();
+trace_begin("CallDescrWorker 8");
     ENABLESTRESSHEAP();
+    trace_end();
 }
 #endif // !defined(_WIN64) && defined(_DEBUG)
 
@@ -350,6 +360,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
+
     CONTRACTL
     {
         THROWS;
@@ -396,19 +407,15 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         // may not trigger a GC before we actually call managed code
         //
         GCX_FORBID();
-
         // Record this call if required
         g_IBCLogger.LogMethodDescAccess(m_pMD);
-
         //  
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
         // also required for critical calls since we cannot inject any failure points between the 
         // caller of MethodDesc::CallDescr and the actual transition to managed code.
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
         _ASSERTE(GetAppDomain()->ShouldHaveCode());
-
 #ifdef FEATURE_INTERPRETER
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT)
                  || isCallConv(m_methodSig.GetCallingConvention(), CorCallingConvention(IMAGE_CEE_CS_CALLCONV_C))
@@ -419,14 +426,12 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT));
         _ASSERTE(!(m_methodSig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE));
 #endif
-
 #ifdef DEBUGGING_SUPPORTED
         if (CORDebuggerTraceCall())
         {
             g_pDebugInterface->TraceCall((const BYTE *)m_pCallTarget);
         }
 #endif // DEBUGGING_SUPPORTED
-
 #if CHECK_APP_DOMAIN_LEAKS
         if (g_pConfig->AppDomainLeaks())
         {
@@ -440,7 +445,6 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
             }
         }
 #endif // CHECK_APP_DOMAIN_LEAKS
-
 #ifdef _DEBUG
         {
             // The metasig should be reset
@@ -463,25 +467,20 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
             m_methodSig.Reset();
         }
 #endif // _DEBUG
-
         DWORD   arg = 0;
 
         nStackBytes = m_argIt.SizeOfFrameArgumentArray();
-
         // Create a fake FramedMethodFrame on the stack.
-
         // Note that SizeOfFrameArgumentArray does overflow checks with sufficient margin to prevent overflows here
         DWORD dwAllocaSize = TransitionBlock::GetNegSpaceSize() + sizeof(TransitionBlock) + nStackBytes;
 
         LPBYTE pAlloc = (LPBYTE)_alloca(dwAllocaSize);
 
         pTransitionBlock = pAlloc + TransitionBlock::GetNegSpaceSize();
-
 #ifdef CALLDESCR_REGTYPEMAP
         dwRegTypeMap            = 0;
         BYTE*   pMap            = (BYTE*)&dwRegTypeMap;
 #endif // CALLDESCR_REGTYPEMAP
-
         if (m_argIt.HasThis())
         {
             *((LPVOID*)(pTransitionBlock + m_argIt.GetThisOffset())) = ArgSlotToPtr(pArguments[arg++]);
@@ -510,8 +509,6 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
             pvRetBuff = ArgSlotToPtr(pArguments[arg++]);
         }
 #endif // FEATURE_HFA
-
-
 #ifdef FEATURE_INTERPRETER
         if (m_argIt.IsVarArg())
         {
@@ -523,14 +520,12 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
             *((LPVOID*)(pTransitionBlock + m_argIt.GetParamTypeArgOffset())) = ArgSlotToPtr(pArguments[arg++]);
         }
 #endif
-
         int    ofs;
         for (; TransitionBlock::InvalidOffset != (ofs = m_argIt.GetNextOffset()); arg++)
         {
 #ifdef CALLDESCR_REGTYPEMAP
             FillInRegTypeMap(ofs, m_argIt.GetArgType(), pMap);
 #endif
-
 #ifdef CALLDESCR_FPARGREGS
             // Under CALLDESCR_FPARGREGS -ve offsets indicate arguments in floating point registers. If we
             // have at least one such argument we point the call worker at the floating point area of the
@@ -543,7 +538,6 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
                                                                     TransitionBlock::GetOffsetOfFloatArgumentRegisters());
             }
 #endif
-
 #if CHECK_APP_DOMAIN_LEAKS
             // Make sure the arg is in the right app domain
             if (g_pConfig->AppDomainLeaks() && m_argIt.GetArgType() == ELEMENT_TYPE_CLASS)
@@ -554,7 +548,6 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
                     _ASSERTE(!"Attempt to pass object in wrong app domain to method");
             }
 #endif // CHECK_APP_DOMAIN_LEAKS
-
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             _ASSERTE(ofs != TransitionBlock::StructInRegsOffset);
 #endif
@@ -601,7 +594,6 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         fpReturnSize = m_argIt.GetFPReturnSize();
 
     } // END GCX_FORBID & ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE
-
     CallDescrData callDescrData;
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
@@ -631,14 +623,12 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
     {
         CallDescrWorkerWithHandler(&callDescrData);
     }
-
     if (pvRetBuff != NULL)
     {
         memcpyNoGCRefs(pvRetBuff, &callDescrData.returnValue, sizeof(callDescrData.returnValue));
     }
 
     ARG_SLOT retval = *(ARG_SLOT *)(&callDescrData.returnValue);
-
 #if !defined(_WIN64) && BIGENDIAN
     {
         GCX_FORBID();
@@ -649,8 +639,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         }
     }
 #endif // !defined(_WIN64) && BIGENDIAN
-    
-    return retval;
+return retval;
 }
 
 void CallDefaultConstructor(OBJECTREF ref)

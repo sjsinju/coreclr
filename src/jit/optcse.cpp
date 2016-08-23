@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
-
+#include <trace.h>
 /*****************************************************************************/
 #if FEATURE_ANYCSE
 /*****************************************************************************/
@@ -669,7 +669,7 @@ unsigned Compiler::optValnumCSE_Index(GenTreePtr tree, GenTreePtr stmt)
  */
 
 unsigned Compiler::optValnumCSE_Locate()
-{
+{trace_begin(__FUNCTION__);
     // Locate CSE candidates and assign them indices
 
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
@@ -729,14 +729,14 @@ unsigned Compiler::optValnumCSE_Locate()
 
     if (!optDoCSE)
     {
-        return 0;
+        trace_end();return 0;
     }
 
     /* We're finished building the expression lookup table */
 
     optCSEstop();
 
-    return 1;
+    trace_end();return 1;
 }
 
 /*****************************************************************************
@@ -2175,7 +2175,7 @@ void Compiler::optValnumCSE_UnmarkCSEs(GenTreePtr deadTree, GenTreePtr keepList)
  */
 
 void Compiler::optOptimizeValnumCSEs()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -2184,7 +2184,7 @@ void Compiler::optOptimizeValnumCSEs()
 
     if (optConfigDisableCSE())
     {
-        return; // Disabled by JitNoCSE
+        trace_end();return; // Disabled by JitNoCSE
     }
 #endif
 
@@ -2210,7 +2210,7 @@ void Compiler::optOptimizeValnumCSEs()
     }
 
     optValnumCSE_phase = false;
-}
+trace_end();}
 
 #endif // FEATURE_VALNUM_CSE
 
@@ -2485,7 +2485,7 @@ bool Compiler::optConfigDisableCSE2()
 #endif
 
 void Compiler::optOptimizeCSEs()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -2503,7 +2503,7 @@ void Compiler::optOptimizeCSEs()
     optOptimizeValnumCSEs();
     EndPhase(PHASE_OPTIMIZE_VALNUM_CSES);
 #endif // FEATURE_VALNUM_CSE
-}
+trace_end();}
 
 /*****************************************************************************
  *

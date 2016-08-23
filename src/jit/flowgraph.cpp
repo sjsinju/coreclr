@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
-
+#include <trace.h>
 /*****************************************************************************/
 
 void Compiler::fgInit()
@@ -2473,7 +2473,7 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
 }
 
 void Compiler::fgComputeDoms()
-{
+{trace_begin(__FUNCTION__);
     assert(!fgCheapPredsValid);
 
 #ifdef DEBUG
@@ -2650,10 +2650,10 @@ void Compiler::fgComputeDoms()
     assert(BasicBlockBitSetTraits::GetSize(this) == fgDomBBcount + 1);
 
     fgDomsComputed = true;
-}
+trace_end();}
 
 void Compiler::fgBuildDomTree()
-{
+{trace_begin(__FUNCTION__);
     unsigned    i;
     BasicBlock* block;
 
@@ -2784,6 +2784,7 @@ void Compiler::fgBuildDomTree()
         }
     }
 #endif // DEBUG
+trace_end();
 }
 
 BlockSet_ValRet_T Compiler::fgDomTreeEntryNodes(BasicBlockList** domTree)
@@ -5706,7 +5707,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
  */
 
 void Compiler::fgFindBasicBlocks()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -5730,7 +5731,7 @@ void Compiler::fgFindBasicBlocks()
     fgFindJumpTargets(info.compCode, info.compILCodeSize, jumpTarget);
     if (compDonotInline())
     {
-        return;
+        trace_end();return;
     }
 
     unsigned XTnum;
@@ -5879,7 +5880,7 @@ void Compiler::fgFindBasicBlocks()
 
         if (compInlineResult->IsFailure())
         {
-            return;
+            trace_end();return;
         }
 
         noway_assert(info.compXcptnsCount == 0);
@@ -5895,14 +5896,14 @@ void Compiler::fgFindBasicBlocks()
             lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline candidate multiple BBJ_RETURN spill temp"));
             lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
         }
-        return;
+        trace_end();return;
     }
 
     /* Mark all blocks within 'try' blocks as such */
 
     if (info.compXcptnsCount == 0)
     {
-        return;
+        trace_end();return;
     }
 
     if (info.compXcptnsCount > MAX_XCPTN_INDEX)
@@ -6031,7 +6032,7 @@ void Compiler::fgFindBasicBlocks()
                 if (block == nullptr)
                 {
                     BADCODE3("Missing endfilter for filter", " at offset %04X", filtBB->bbCodeOffs);
-                    return;
+                    trace_end();return;
                 }
 
                 // Still inside the filter
@@ -6292,6 +6293,7 @@ void Compiler::fgFindBasicBlocks()
 #endif
 
     fgNormalizeEH();
+trace_end();
 }
 
 /*****************************************************************************
@@ -6300,7 +6302,7 @@ void Compiler::fgFindBasicBlocks()
  */
 
 void Compiler::fgCheckBasicBlockControlFlow()
-{
+{trace_begin(__FUNCTION__);
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 
     EHblkDsc* HBtab;
@@ -6407,7 +6409,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 noway_assert(!"Unexpected bbJumpKind"); // these blocks don't get created until importing
                 break;
         }
-    }
+    }trace_end();
 }
 
 /****************************************************************************
@@ -6416,7 +6418,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
  */
 
 void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, BOOL isLeave)
-{
+{trace_begin(__FUNCTION__);
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 
     unsigned srcHndBeg, destHndBeg;
@@ -6600,7 +6602,7 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, B
         {
             if (bValidJumpToTry)
             {
-                return;
+                trace_end();return;
             }
             else
             {
@@ -6662,7 +6664,7 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, B
                 BADCODE3("illegal control flow in to/out of try block", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
             }
         }
-    }
+    }trace_end();
 }
 
 /*****************************************************************************
@@ -6671,7 +6673,7 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, B
  */
 
 bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkDest, bool sibling)
-{
+{trace_begin(__FUNCTION__);
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 
     noway_assert(blkDest->hasTryIndex());
@@ -6686,7 +6688,7 @@ bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkD
     // check that we are not jumping into middle of try
     if (HBtab->ebdTryBeg != blkDest)
     {
-        return false;
+        trace_end();return false;
     }
 
     if (sibling)
@@ -6717,11 +6719,11 @@ bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkD
     {
         if (HBtab->ebdTryBeg->bbNum < blkDest->bbNum && blkDest->bbNum <= HBtab->ebdTryLast->bbNum)
         {
-            return false;
+            trace_end();return false;
         }
     }
 
-    return true;
+    trace_end();return true;
 }
 
 /*****************************************************************************
@@ -6773,7 +6775,7 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
  */
 
 void Compiler::fgImport()
-{
+{trace_begin(__FUNCTION__);
     fgHasPostfix = false;
 
     impImport(fgFirstBB);
@@ -6783,7 +6785,7 @@ void Compiler::fgImport()
         CorInfoMethodRuntimeFlags verFlag;
         verFlag = tiIsVerifiableCode ? CORINFO_FLG_VERIFIABLE : CORINFO_FLG_UNVERIFIABLE;
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, verFlag);
-    }
+    }trace_end();
 }
 
 /*****************************************************************************
@@ -8953,7 +8955,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 /*****************************************************************************/
 
 void Compiler::fgFindOperOrder()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -8977,7 +8979,7 @@ void Compiler::fgFindOperOrder()
             compCurStmt = stmt;
             gtSetStmtInfo(stmt);
         }
-    }
+    }trace_end();
 }
 
 /*****************************************************************************/
@@ -21477,9 +21479,9 @@ unsigned     Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
 
 void                Compiler::fgInline()
-{
+{trace_begin(__FUNCTION__);
     if (!opts.OptEnabled(CLFLG_INLINING)) {
-        return;
+        trace_end();return;
 }
 
 #ifdef DEBUG
@@ -21604,7 +21606,7 @@ void                Compiler::fgInline()
     }
 
 #endif // DEBUG
-}
+trace_end();}
 
 #ifdef DEBUG
 
@@ -21964,7 +21966,7 @@ Compiler::fgWalkResult      Compiler::fgDebugCheckInlineCandidates(GenTreePtr* p
 
 void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
                                              InlineResult* inlineResult)
-{
+{trace_begin(__FUNCTION__);
     noway_assert(call->gtOper == GT_CALL);
     noway_assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
     noway_assert(opts.OptEnabled(CLFLG_INLINING));
@@ -22000,7 +22002,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
             printf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
         }
 #endif // DEBUG
-        return;
+        trace_end();return;
     }
 
     // Set the trap to catch all errors (including recoverable ones from the EE)
@@ -22105,7 +22107,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 
     if (inlineResult->IsFailure())
     {
-        return;
+        trace_end();return;
     }
 
 #ifdef DEBUG
@@ -22131,7 +22133,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
         }
 #endif // DEBUG
         inlineResult->NoteFatal(InlineObservation::CALLEE_LACKS_RETURN);
-        return;
+        trace_end();return;
     }
 
     if (inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_SPECULATIVE)
@@ -22142,7 +22144,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
                 inlineCandidateInfo->exactContextHnd /* context */) & CORINFO_INITCLASS_INITIALIZED))
         {
             inlineResult->NoteFatal(InlineObservation::CALLEE_CLASS_INIT_FAILURE);
-            return;
+            trace_end();return;
         }
     }
 
@@ -22177,7 +22179,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 
     // We inlined...
     inlineResult->NoteSuccess();
-}
+trace_end();}
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // The inlining attempt cannot be failed starting from this point.

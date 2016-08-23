@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
-
+#include <trace.h>
 /*****************************************************************************/
 
 const unsigned short GenTree::gtOperKindTable[] = {
@@ -1233,7 +1233,7 @@ Compiler::fgWalkResult Compiler::fgWalkTree(GenTreePtr*  pTree,
                                             fgWalkPreFn* postVisitor,
                                             void*        callBackData)
 
-{
+{trace_begin(__FUNCTION__);
     fgWalkData walkData;
 
     walkData.compiler      = this;
@@ -1272,7 +1272,7 @@ Compiler::fgWalkResult Compiler::fgWalkTree(GenTreePtr*  pTree,
     }
 #endif
 
-    return result;
+    trace_end();return result;
 }
 
 // ------------------------------------------------------------------------------------------
@@ -11491,7 +11491,7 @@ GenTreePtr Compiler::gtFoldExprCompare(GenTreePtr tree)
  */
 
 GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
-{
+{trace_begin(__FUNCTION__);
     GenTreePtr op1  = tree->gtOp.gtOp1;
     GenTreePtr op2  = tree->gtOp.gtOp2;
     genTreeOps oper = tree->OperGet();
@@ -11504,7 +11504,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
     /* Filter out operators that cannot be folded here */
     if (oper == GT_CAST)
     {
-        return tree;
+        trace_end();return tree;
     }
 
     /* We only consider TYP_INT for folding
@@ -11512,7 +11512,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
 
     if (oper != GT_QMARK && !varTypeIsIntOrI(tree->gtType))
     {
-        return tree;
+        trace_end();return tree;
     }
 
     /* Find out which is the constant node */
@@ -11529,7 +11529,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
     }
     else
     {
-        return tree;
+        trace_end();return tree;
     }
 
     /* Get the constant value */
@@ -11580,7 +11580,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
                     op->gtPrev = tree->gtPrev;
                 }
                 fgSetStmtSeq(asgStmt);
-                return op;
+                trace_end();return op;
             }
             break;
 
@@ -11751,7 +11751,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
 
     /* The node is not foldable */
 
-    return tree;
+    trace_end();return tree;
 
 DONE_FOLD:
 
@@ -11769,7 +11769,7 @@ DONE_FOLD:
     op->gtNext = tree->gtNext;
     op->gtPrev = tree->gtPrev;
 
-    return op;
+    trace_end();return op;
 }
 
 /*****************************************************************************

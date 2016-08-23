@@ -17,7 +17,7 @@
 
 #include "compiler.h"
 #include "jitstd.h"
-
+#include <trace.h>
 class DataFlow
 {
 private:
@@ -50,7 +50,7 @@ private:
 
 template <typename TCallback>
 void DataFlow::ForwardAnalysis(TCallback& callback)
-{
+{trace_begin(__FUNCTION__);
     jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(m_pCompiler->getAllocator()));
 
     worklist.insert(worklist.begin(), m_pCompiler->fgFirstBB);
@@ -78,4 +78,4 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
             }
         }
     }
-}
+trace_end();}

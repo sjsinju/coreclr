@@ -27,6 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifndef JIT32_GCENCODER
 #include "gcinfoencoder.h"
 #endif
+#include <trace.h>
 
 /*****************************************************************************/
 
@@ -1799,7 +1800,7 @@ bool CodeGen::genCreateAddrMode(GenTreePtr  addr,
 #endif
                                 unsigned* cnsPtr,
                                 bool      nogen)
-{
+{trace_begin(__FUNCTION__);
 #ifndef LEGACY_BACKEND
     assert(nogen == true);
 #endif // !LEGACY_BACKEND
@@ -1835,7 +1836,7 @@ bool CodeGen::genCreateAddrMode(GenTreePtr  addr,
 
     if (addr->gtOper != GT_ADD)
     {
-        return false;
+        trace_end();return false;
     }
 
     // Can't use indirect addressing mode as we need to check for overflow.
@@ -1843,7 +1844,7 @@ bool CodeGen::genCreateAddrMode(GenTreePtr  addr,
 
     if (addr->gtOverflow())
     {
-        return false;
+        trace_end();return false;
     }
 
     GenTreePtr rv1 = nullptr;
@@ -1953,7 +1954,7 @@ AGAIN:
                 genIncRegBy(reg1, cns, addr, addr->TypeGet());
 
                 genUpdateLife(addr);
-                return true;
+                trace_end();return true;
             }
         }
 #endif // LEGACY_BACKEND
@@ -1983,7 +1984,7 @@ AGAIN:
                 case GT_MUL:
                     if (op1->gtOverflow())
                     {
-                        return false; // Need overflow check
+                        trace_end();return false; // Need overflow check
                     }
 
                     __fallthrough;
@@ -2397,7 +2398,7 @@ FOUND_AM:
 #endif
     *cnsPtr = (unsigned)cns;
 
-    return true;
+    trace_end();return  true;
 }
 
 /*****************************************************************************
@@ -2749,7 +2750,7 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
  */
 
 void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -3245,6 +3246,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 #endif // DISPLAY_SIZES
 
     compiler->EndPhase(PHASE_EMIT_GCEH);
+    trace_end();
 }
 
 /*****************************************************************************
@@ -8147,7 +8149,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
 void CodeGen::genFnProlog()
-{
+{trace_begin(__FUNCTION__);
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
     compiler->funSetCurrentFunc(0);
@@ -8966,6 +8968,7 @@ void CodeGen::genFnProlog()
     compiler->unwindEndProlog();
 
     noway_assert(getEmitter()->emitMaxTmpSize == compiler->tmpSize);
+    trace_end();
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -10359,7 +10362,7 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
  */
 
 void CodeGen::genGeneratePrologsAndEpilogs()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -10417,6 +10420,7 @@ void CodeGen::genGeneratePrologsAndEpilogs()
         getEmitter()->emitDispIGlist(false);
     }
 #endif
+trace_end();
 }
 
 /*

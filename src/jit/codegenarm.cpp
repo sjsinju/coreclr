@@ -165,10 +165,10 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
  *  Generate code for all the basic blocks in the function.
  */
 
-void CodeGen::genCodeForBBlist()
+void                CodeGen::genCodeForBBlist()
 {
-    unsigned   varNum;
-    LclVarDsc* varDsc;
+    unsigned        varNum;
+    LclVarDsc   *   varDsc;
 
     unsigned savedStkLvl;
 

@@ -195,7 +195,7 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
-
+#include <trace.h>
 #ifndef FEATURE_PAL
 #include "dwreport.h"
 #endif // !FEATURE_PAL
@@ -804,7 +804,7 @@ do { \
 #endif
 
 void EEStartupHelper(COINITIEE fFlags)
-{
+{trace_begin("EEStartupHelper");
     CONTRACTL
     {
         THROWS;
@@ -1374,7 +1374,7 @@ ErrExit: ;
         DebugBreak();
 #endif
     }
-
+trace_end();
 }
 
 LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
@@ -1422,7 +1422,6 @@ HRESULT EEStartup(COINITIEE fFlags)
     STATIC_CONTRACT_NOTHROW;
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus));
-
     PAL_TRY(COINITIEE *, pfFlags, &fFlags)
     {
 #ifndef CROSSGEN_COMPILE
@@ -1432,7 +1431,6 @@ HRESULT EEStartup(COINITIEE fFlags)
         DacGlobals::Initialize();
 #endif
 #endif // CROSSGEN_COMPILE
-
         EEStartupHelper(*pfFlags);
     }
     PAL_EXCEPT_FILTER (FilterStartupException)
@@ -1441,7 +1439,6 @@ HRESULT EEStartup(COINITIEE fFlags)
         _ASSERTE(FAILED(g_EEStartupStatus));
     }
     PAL_ENDTRY
-
 #ifndef CROSSGEN_COMPILE
     if(SUCCEEDED(g_EEStartupStatus) && (fFlags & COINITEE_MAIN) == 0)
         g_EEStartupStatus = SystemDomain::SetupDefaultDomainNoThrow();

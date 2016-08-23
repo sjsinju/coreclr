@@ -160,7 +160,7 @@
 #include "../debug/ee/debugger.h"
 #include "../debug/ee/walker.h"
 #include "../debug/ee/controller.h"
-
+#include <trace.h>
 // This HRESULT is only used as a private implementation detail. If it escapes functions
 // defined in this file it is a bug. Corerror.xml has a comment in it reserving this
 // value for our use but it doesn't appear in the public headers.
@@ -2139,7 +2139,7 @@ PCODE ReJitManager::DoReJitIfNecessaryWorker(PTR_MethodDesc pMD)
 //
 
 PCODE ReJitManager::DoReJit(ReJitInfo * pInfo)
-{
+{trace_begin(__FUNCTION__);
     STANDARD_VM_CONTRACT;
 
 #ifdef PROFILING_SUPPORTED
@@ -2325,7 +2325,7 @@ PCODE ReJitManager::DoReJit(ReJitInfo * pInfo)
             pCodeOfRejittedCode,
             pInfo->m_pShared->GetId());
     }
-    return ret;
+    trace_end();return ret;
 }
 
 

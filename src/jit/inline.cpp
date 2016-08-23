@@ -8,7 +8,7 @@
 #endif
 
 #include "inlinepolicy.h"
-
+#include <trace.h>
 // Lookup table for inline description strings
 
 static const char* InlineDescriptions[] = {
@@ -553,7 +553,7 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, GenTreeStmt* s
     , m_Callee(nullptr)
     , m_Description(description)
     , m_Reported(false)
-{
+{trace_begin(__FUNCTION__);
     // Set the compiler instance
     m_RootCompiler = compiler->impInlineRoot();
 
@@ -583,7 +583,7 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, GenTreeStmt* s
     {
         m_Callee = m_Call->gtCall.gtCallMethHnd;
     }
-}
+trace_end();}
 
 //------------------------------------------------------------------------
 // InlineResult: Construct an InlineResult to evaluate a particular

@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "instr.h"
 #include "emit.h"
 #include "codegen.h"
-
+#include <trace.h>
 /*****************************************************************************/
 
 const instruction emitJumpKindInstructions[] = {
@@ -1232,22 +1232,22 @@ emitter::insSize emitter::emitInsSize(insFormat insFmt)
 
     /* encode = 0000x */
     if (imm8 == uval32)
-        return true;
+        {return true;}
 
     unsigned imm32a = (imm8 << 16) | imm8;
     /* encode = 0001x */
     if (imm32a == uval32)
-        return true;
+        {return true;}
 
     unsigned imm32b = (imm32a << 8);
     /* encode = 0010x */
     if (imm32b == uval32)
-        return true;
+        {return true;}
 
     unsigned imm32c = (imm32a | imm32b);
     /* encode = 0011x */
     if (imm32c == uval32)
-        return true;
+        {return true;}
 
     unsigned mask32 = 0x00000ff;
 
@@ -1259,7 +1259,7 @@ emitter::insSize emitter::emitInsSize(insFormat insFmt)
         mask32 <<= 1;
         temp = uval32 & ~mask32;
         if (temp == 0)
-            return true;
+            {return true;}
         encode--;
     } while (encode >= 8);
 
@@ -2341,7 +2341,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                             int         imm,
                             insFlags    flags /* = INS_FLAGS_DONT_CARE */,
                             insOpts     opt /* = INS_OPTS_NONE */)
-{
+{trace_begin(__FUNCTION__);
     emitAttr  size = EA_SIZE(attr);
     insFormat fmt  = IF_NONE;
     insFlags  sf   = INS_FLAGS_DONT_CARE;
@@ -2364,7 +2364,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                 {
                     // Use Thumb-1 encoding
                     emitIns_R_I(ins, attr, reg1, imm, flags);
-                    return;
+                    trace_end();return;
                 }
                 else if (isLowRegister(reg1))
                 {
@@ -2387,7 +2387,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                 {
                     emitIns_R_R(INS_mov, attr, reg1, reg2, flags);
                 }
-                return;
+                trace_end();return;
             }
             // Can we encode the immediate 'imm' using a Thumb-1 encoding?
             else if (isLowRegister(reg1) && isLowRegister(reg2) && insSetsFlags(flags) && (unsigned_abs(imm) <= 0x0007))
@@ -2417,7 +2417,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                 }
                 // Use Thumb-1 encoding
                 emitIns_R_I(ins, attr, reg1, imm, flags);
-                return;
+                trace_end();return;
             }
             else if (isModImmConst(imm))
             {
@@ -2540,7 +2540,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                 {
                     // Use the Thumb-1 reg,reg encoding
                     emitIns_R_R(ins, attr, reg1, reg2, flags);
-                    return;
+                    trace_end();return;
                 }
             }
             else // imm > 0  &&  imm <= 31
@@ -2565,13 +2565,13 @@ void emitter::emitIns_R_R_I(instruction ins,
                 {
                     // Use the Thumb-1 reg,reg encoding
                     emitIns_R_R(ins, attr, reg1, reg2, flags);
-                    return;
+                    trace_end();return;
                 }
                 if (((ins == INS_cmn) || (ins == INS_tst)) && isLowRegister(reg1) && isLowRegister(reg2))
                 {
                     // Use the Thumb-1 reg,reg encoding
                     emitIns_R_R(ins, attr, reg1, reg2, flags);
-                    return;
+                    trace_end();return;
                 }
             }
             else // imm > 0  &&  imm <= 31)
@@ -2607,7 +2607,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                     // Use MOV/MOVS instriction
                     emitIns_R_R(INS_mov, attr, reg1, reg2, flags);
                 }
-                return;
+                trace_end();return;
             }
 
             if (insSetsFlags(flags) && (ins != INS_ror) && isLowRegister(reg1) && isLowRegister(reg2))
@@ -2639,7 +2639,7 @@ void emitter::emitIns_R_R_I(instruction ins,
             {
                 // Use Thumb-1 encoding
                 emitIns_R_R(ins, attr, reg1, reg2, INS_FLAGS_NOT_SET);
-                return;
+                trace_end();return;
             }
 
             fmt = IF_T2_C6;
@@ -2801,7 +2801,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                     regNumber rsvdReg = codeGen->rsGetRsvdReg();
                     codeGen->instGen_Set_Reg_To_Imm(EA_4BYTE, rsvdReg, (ssize_t)imm);
                     emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);
-                    return;
+                    trace_end();return;
                 }
             }
             break;
@@ -2844,7 +2844,7 @@ void emitter::emitIns_R_R_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
-}
+trace_end();}
 
 /*****************************************************************************
  *

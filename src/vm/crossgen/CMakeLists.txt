@@ -155,3 +155,5 @@ if (CLR_CMAKE_PLATFORM_LINUX)
 endif (CLR_CMAKE_PLATFORM_LINUX)
 
 add_library_clr(cee_crossgen ${VM_CROSSGEN_SOURCES})
+
+target_link_libraries(cee_crossgen ttrace ttrace-extension)

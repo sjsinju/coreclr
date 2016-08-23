@@ -1676,7 +1676,7 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
  */
 
 void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
-{
+{trace_begin(__FUNCTION__);
     assert(pAlloc);
     compAllocator = pAlloc;
 
@@ -1893,7 +1893,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif
 
     compUsesThrowHelper = false;
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -5283,7 +5283,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
                                 ULONG*                           methodCodeSize,
                                 CORJIT_FLAGS*                    compileFlags,
                                 CorInfoInstantiationVerification instVerInfo)
-{
+{trace_begin(__FUNCTION__);
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
 
     info.compCode       = methodInfo->ILCode;
@@ -5322,7 +5322,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     {
         // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
         // so skip it.
-        return CORJIT_SKIPPED;
+        trace_end();return CORJIT_SKIPPED;
     }
 #endif // ALT_JIT
 
@@ -5612,21 +5612,21 @@ _Next:
 
         if (!info.compMatchedVM)
         {
-            return CORJIT_SKIPPED;
+            trace_end();return CORJIT_SKIPPED;
         }
 
 #ifdef ALT_JIT
 #ifdef DEBUG
         if (JitConfig.RunAltJitCode() == 0)
         {
-            return CORJIT_SKIPPED;
+            trace_end();return CORJIT_SKIPPED;
         }
 #endif // DEBUG
 #endif // ALT_JIT
     }
 
     /* Success! */
-    return CORJIT_OK;
+    trace_end();return CORJIT_OK;
 }
 
 /*****************************************************************************/

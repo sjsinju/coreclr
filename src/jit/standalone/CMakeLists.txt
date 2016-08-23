@@ -49,6 +49,8 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 target_link_libraries(${JIT_BASE_NAME}
    ${RYUJIT_LINK_LIBRARIES}
+   ttrace
+   ttrace-extension
 )
 
 # add the install targets

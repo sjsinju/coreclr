@@ -25,7 +25,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include <fcntl.h> // For _O_TEXT
 #include <errno.h> // For EINVAL
 #endif
-
+#include <trace.h>
 /*****************************************************************************/
 
 FILE* jitstdout = nullptr;
@@ -278,10 +278,10 @@ void JitTls::SetCompiler(Compiler* compiler)
 
 CorJitResult CILJit::compileMethod(
     ICorJitInfo* compHnd, CORINFO_METHOD_INFO* methodInfo, unsigned flags, BYTE** entryAddress, ULONG* nativeSizeOfCode)
-{
+{trace_begin(__FUNCTION__);
     if (g_realJitCompiler != nullptr)
     {
-        return g_realJitCompiler->compileMethod(compHnd, methodInfo, flags, entryAddress, nativeSizeOfCode);
+        trace_end();return g_realJitCompiler->compileMethod(compHnd, methodInfo, flags, entryAddress, nativeSizeOfCode);
     }
 
     CORJIT_FLAGS jitFlags = {0};
@@ -316,7 +316,7 @@ CorJitResult CILJit::compileMethod(
         *entryAddress = (BYTE*)methodCodePtr;
     }
 
-    return CorJitResult(result);
+    trace_end();return CorJitResult(result);
 }
 
 /*****************************************************************************

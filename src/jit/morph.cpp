@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
-
+#include <trace.h>
 // Convert the given node into a call to the specified helper passing
 // the given argument list.
 //
@@ -6003,7 +6003,7 @@ unsigned Compiler::fgGetBigOffsetMorphingTemp(var_types type)
  */
 
 GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
-{
+ {trace_begin(__FUNCTION__);
     assert(tree->gtOper == GT_FIELD);
 
     noway_assert(tree->gtFlags & GTF_GLOB_REF);
@@ -6027,7 +6027,7 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
         if (newTree != tree)
         {
             newTree = fgMorphSmpOp(newTree);
-            return newTree;
+            trace_end();return newTree;
         }
     }
     else if (objRef != nullptr && objRef->OperGet() == GT_ADDR && objRef->OperIsSIMD())
@@ -6420,7 +6420,7 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
                     tree->SetOper(GT_IND);
                     tree->gtOp.gtOp1 = addr;
 
-                    return fgMorphSmpOp(tree);
+                    trace_end();return fgMorphSmpOp(tree);
                 }
                 else
 #endif // _TARGET_64BIT_
@@ -6435,7 +6435,7 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
                     tree->gtClsVar.gtFieldSeq = fieldSeq;
                 }
 
-                return tree;
+                trace_end();return tree;
             }
             else
             {
@@ -6469,7 +6469,8 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
         fgAddFieldSeqForZeroOffset(addr, fieldSeq);
     }
 
-    return res;
+    trace_end();return res;
+
 }
 
 //------------------------------------------------------------------------------
@@ -6490,7 +6491,7 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
 //    is cleared.
 
 void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
-{
+{trace_begin(__FUNCTION__);
     // The call must be a candiate for inlining.
     assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
 
@@ -6528,7 +6529,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
         //
         call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
     }
-}
+trace_end();}
 
 /*****************************************************************************
  *  Helper to attempt to inline a call
@@ -6538,7 +6539,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
  */
 
 void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
-{
+{trace_begin(__FUNCTION__);
     // Don't expect any surprises here.
     assert(result->IsCandidate());
 
@@ -6550,13 +6551,13 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         // able to inline other callees into this caller, or inline
         // this callee in other callers.
         result->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
-        return;
+        trace_end();return;
     }
 
     if (call->IsVirtual())
     {
         result->NoteFatal(InlineObservation::CALLSITE_IS_VIRTUAL);
-        return;
+        trace_end();return;
     }
 
     // impMarkInlineCandidate() is expected not to mark tail prefixed calls
@@ -6572,7 +6573,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     if (opts.compNeedSecurityCheck)
     {
         result->NoteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
-        return;
+        trace_end();return;
     }
 
     //
@@ -6621,7 +6622,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         }
 #endif
 
-        return;
+       trace_end();return;
     }
 
 #ifdef DEBUG
@@ -6630,7 +6631,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         // printf("After inlining lvaCount=%d.\n", lvaCount);
     }
 #endif
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -8269,7 +8270,7 @@ GenTreePtr Compiler::fgMorphLeaf(GenTreePtr tree)
 }
 
 void Compiler::fgAssignSetVarDef(GenTreePtr tree)
-{
+{trace_begin(__FUNCTION__);
     GenTreeLclVarCommon* lclVarCmnTree;
     bool                 isEntire = false;
     if (tree->DefinesLocal(this, &lclVarCmnTree, &isEntire))
@@ -8286,7 +8287,7 @@ void Compiler::fgAssignSetVarDef(GenTreePtr tree)
             lclVarCmnTree->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
         }
     }
-}
+trace_end();}
 
 GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
 {
@@ -14776,7 +14777,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(cons
  */
 
 void Compiler::fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loadw)
-{
+{trace_begin(__FUNCTION__);
     fgRemoveRestOfBlock = false;
 
     noway_assert(fgExpandInline == false);
@@ -15021,7 +15022,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loa
 
     // Reset this back so that it doesn't leak out impacting other blocks
     fgRemoveRestOfBlock = false;
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -15031,7 +15032,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loa
  */
 
 void Compiler::fgMorphBlocks()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -15377,7 +15378,7 @@ void Compiler::fgMorphBlocks()
         fgDispBasicBlocks(true);
     }
 #endif
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -16134,7 +16135,7 @@ void Compiler::fgPostExpandQmarkChecks()
  */
 
 void Compiler::fgMorph()
-{
+{trace_begin(__FUNCTION__);
     noway_assert(!compIsForInlining()); // Inlinee's compiler should never reach here.
 
     fgOutgoingArgTemps = nullptr;
@@ -16255,7 +16256,7 @@ void Compiler::fgMorph()
 #ifdef DEBUG
     compCurBB = nullptr;
 #endif // DEBUG
-}
+trace_end();}
 
 /*****************************************************************************
  *
@@ -17369,7 +17370,7 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq
  */
 
 void Compiler::fgMarkAddressExposedLocals()
-{
+{trace_begin(__FUNCTION__);
 #ifdef DEBUG
     if (verbose)
     {
@@ -17399,7 +17400,7 @@ void Compiler::fgMarkAddressExposedLocals()
         block = block->bbNext;
 
     } while (block);
-}
+trace_end();}
 
 // fgNodesMayInterfere:
 //   return true if moving nodes relative to each other can change the result of a computation

@@ -19,7 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "corexcep.h"
-
+#include <trace.h>
 #define Verify(cond, msg)                                                                                              \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -863,7 +863,7 @@ GenTreeArgList* Compiler::impPopList(unsigned          count,
                                      unsigned*         flagsPtr,
                                      CORINFO_SIG_INFO* sig,
                                      GenTreeArgList*   prefixTree)
-{
+{trace_begin(__FUNCTION__);
     assert(sig == nullptr || count == sig->numArgs);
 
     unsigned             flags = 0;
@@ -979,7 +979,7 @@ GenTreeArgList* Compiler::impPopList(unsigned          count,
             prefixTree           = next;
         }
     }
-    return treeList;
+    trace_end();return treeList;
 }
 
 /*****************************************************************************
@@ -4822,7 +4822,7 @@ GenTreePtr Compiler::impImportLdvirtftn(GenTreePtr              thisPtr,
 
     // Call helper function.  This gets the target address of the final destination callsite.
 
-    return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, GTF_EXCEPT, helpArgs);
+    return gtNewHelperCallNode( CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, GTF_EXCEPT, helpArgs);
 }
 
 /*****************************************************************************
@@ -6043,7 +6043,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                   int                     prefixFlags,
                                   CORINFO_CALL_INFO*      callInfo,
                                   IL_OFFSET               rawILOffset)
-{
+{trace_begin(__FUNCTION__);
     assert(opcode == CEE_CALL || opcode == CEE_CALLVIRT || opcode == CEE_NEWOBJ || opcode == CEE_CALLI);
 
     IL_OFFSETX             ilOffset                       = impCurILOffset(rawILOffset, true);
@@ -6175,7 +6175,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             /* Does the inlinee need a security check token on the frame */
@@ -6183,7 +6183,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (mflags & CORINFO_FLG_SECURITYCHECK)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             /* Does the inlinee use StackCrawlMark */
@@ -6191,7 +6191,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (mflags & CORINFO_FLG_DONT_INLINE_CALLER)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_STACK_CRAWL_MARK);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             /* For now ignore delegate invoke */
@@ -6199,26 +6199,26 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (mflags & CORINFO_FLG_DELEGATE_INVOKE)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_DELEGATE_INVOKE);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             /* For now ignore varargs */
             if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NATIVE_VARARGS);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             if ((mflags & CORINFO_FLG_VIRTUAL) && (sig->sigInst.methInstCount != 0) && (opcode == CEE_CALLVIRT))
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
         }
 
@@ -6238,7 +6238,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             strcmp(className, "System.Runtime.CompilerServices.JitTestLabel") == 0 &&
             (methodName = eeGetMethodName(methHnd, &modName)) != nullptr && strcmp(methodName, "Mark") == 0)
         {
-            return impImportJitTestLabelMark(sig->numArgs);
+            trace_end();return impImportJitTestLabelMark(sig->numArgs);
         }
 #endif // DEBUG
 
@@ -6346,9 +6346,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                          * failing here.
                          */
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
-                        return callRetTyp;
-                    }
-
+                        trace_end();return callRetTyp;
+                    }                            
+        
                     GenTreePtr stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
                     assert(!compDonotInline());
 
@@ -6422,7 +6422,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (compIsForInlining())
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
-                    return callRetTyp;
+                    trace_end();return callRetTyp;
                 }
 
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
@@ -6436,7 +6436,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr            = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 if (compDonotInline())
                 {
-                    return callRetTyp;
+                    trace_end();return callRetTyp;
                 }
 
                 // Clone the (possibly transformed) "this" pointer
@@ -6447,7 +6447,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 GenTreePtr fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 if (compDonotInline())
                 {
-                    return callRetTyp;
+                    trace_end();return callRetTyp;
                 }
 
                 thisPtr = nullptr; // can't reuse it
@@ -6518,7 +6518,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (compDonotInline())
                 {
-                    return callRetTyp;
+                    trace_end();return callRetTyp;
                 }
 
                 // Now make an indirect call through the function pointer
@@ -6702,7 +6702,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // Because inlinee method does not have its own frame.
 
             compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
-            return callRetTyp;
+            trace_end();return callRetTyp;
         }
         else
         {
@@ -6759,7 +6759,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 IMPL_LIMITATION("Can't get PInvoke cookie (cross module generics)");
             }
 
-            return callRetTyp;
+            trace_end();return callRetTyp;
         }
 
         GenTreePtr cookie = eeGetPInvokeCookie(sig);
@@ -6804,7 +6804,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if (!info.compCompHnd->canGetVarArgsHandle(sig))
         {
             compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
-            return callRetTyp;
+            trace_end();return callRetTyp;
         }
 
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
@@ -6860,7 +6860,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
                     if (instParam == nullptr)
                     {
-                        return callRetTyp;
+                        trace_end();return callRetTyp;
                     }
                 }
                 else
@@ -6875,7 +6875,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
                 if (instParam == nullptr)
                 {
-                    return callRetTyp;
+                    trace_end();return callRetTyp;
                 }
             }
         }
@@ -6891,7 +6891,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
 
             if ((clsFlags & CORINFO_FLG_ARRAY) && readonlyCall)
@@ -6910,7 +6910,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
                     if (instParam == NULL)
                     {
-                        return callRetTyp;
+                        trace_end();return callRetTyp;
                     }
                 }
                 else
@@ -6925,7 +6925,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
                 if (instParam == nullptr)
                 {
-                    return callRetTyp;
+                    trace_end();return callRetTyp;
                 }
             }
         }
@@ -6972,7 +6972,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             obj = impTransformThis(obj, pConstrainedResolvedToken, constraintCallThisTransform);
             if (compDonotInline())
             {
-                return callRetTyp;
+                trace_end();return callRetTyp;
             }
         }
 
@@ -7072,7 +7072,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 impPushOnStack(gtNewLclvNode(newobjThis->gtLclVarCommon.gtLclNum, TYP_REF), typeInfo(TI_REF, clsHnd));
             }
         }
-        return callRetTyp;
+        trace_end();return callRetTyp;
     }
 
 DONE:
@@ -7366,7 +7366,7 @@ DONE_CALL:
     // if ( (opcode == CEE_CALLI) || (callInfoCache.fetchCallInfo().kind == CORINFO_VIRTUALCALL_STUB))
     //  callInfoCache.uncacheCallInfo();
 
-    return callRetTyp;
+    trace_end();return callRetTyp;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -9074,7 +9074,7 @@ GenTreePtr Compiler::impCastClassOrIsInstToTree(GenTreePtr              op1,
  *  Import the instr for the given basic block
  */
 void Compiler::impImportBlockCode(BasicBlock* block)
-{
+{trace_begin(__FUNCTION__);
 #define _impResolveToken(kind) impResolveToken(codeAddr, &resolvedToken, kind)
 
 #ifdef DEBUG
@@ -9321,7 +9321,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         // Return if any previous code has caused inline to fail.
         if (compDonotInline())
         {
-            return;
+            trace_end();return;
         }
 
         /* Get the size of additional parameters */
@@ -9465,7 +9465,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_NO_CALLEE_LDSTR)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_LDSTR_RESTRICTION);
-                        return;
+                    trace_end();return;
                     }
                 }
 
@@ -9837,7 +9837,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (op1->gtOper != GT_LCL_VAR)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
-                        return;
+                        trace_end();return;
                     }
 
                     assert(op1->gtOper == GT_LCL_VAR);
@@ -9924,7 +9924,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     assert(!"Shouldn't have exception handlers in the inliner!");
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFINALLY);
-                    return;
+                    trace_end();return;
                 }
 
                 if (verCurrentState.esStackDepth > 0)
@@ -9948,7 +9948,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     assert(!"Shouldn't have exception handlers in the inliner!");
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFILTER);
-                    return;
+                    trace_end();return;
                 }
 
                 block->bbSetRunRarely(); // filters are rare
@@ -9990,7 +9990,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             RET:
                 if (!impReturnInstruction(block, prefixFlags, opcode))
                 {
-                    return; // abort
+                    trace_end();return; // abort
                 }
                 else
                 {
@@ -10148,7 +10148,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impTokenToHandle(&resolvedToken);
                 if (op1 == nullptr)
                 { // compDonotInline()
-                    return;
+                    trace_end();return;
                 }
 
                 args = gtNewArgList(op1);                      // Type
@@ -10293,7 +10293,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (op1->gtOper == GT_CNS_INT)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -10874,7 +10874,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (compIsForInlining())
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_LEAVE);
-                    return;
+                    trace_end();return;
                 }
 
                 JITDUMP(" %04X", jmpAddr);
@@ -11951,7 +11951,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impMethodPointer(&resolvedToken, &callInfo);
                 if (compDonotInline())
                 {
-                    return;
+                    trace_end();return;
                 }
 
                 impPushOnStack(op1, typeInfo(resolvedToken.hMethod));
@@ -11987,7 +11987,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (mflags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC) || !(mflags & CORINFO_FLG_VIRTUAL))
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDVIRTFN_ON_NON_VIRTUAL);
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -12056,7 +12056,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 GenTreePtr fptr = impImportLdvirtftn(op1, &resolvedToken, &callInfo);
                 if (compDonotInline())
                 {
-                    return;
+                    trace_end();return;
                 }
 
                 impPushOnStack(fptr, typeInfo(resolvedToken.hMethod));
@@ -12145,7 +12145,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         // Check to see if this call violates the boundary.
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -12190,7 +12190,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impImportNewObjArray(&resolvedToken, &callInfo);
                     if (compDonotInline())
                     {
-                        return;
+                        trace_end();return;
                     }
 
                     callTyp = TYP_REF;
@@ -12284,7 +12284,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1 = impParentClassTokenToHandle(&resolvedToken, nullptr, TRUE);
                             if (op1 == nullptr)
                             { // compDonotInline()
-                                return;
+                                trace_end();return;
                             }
 
                             // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
@@ -12330,7 +12330,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_CALLI);
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -12496,7 +12496,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         newObjThisPtr, prefixFlags, &callInfo, opcodeOffs);
                 if (compDonotInline())
                 {
-                    return;
+                    trace_end();return;
                 }
 
                 if (explicitTailCall || newBBcreatedForTailcallStress) // If newBBcreatedForTailcallStress is true, we
@@ -12573,14 +12573,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CORINFO_FIELD_STATIC_TLS:
 
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
-                            return;
+                            trace_end();return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
 
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
-                            return;
+                            trace_end();return;
 
                         default:
                             break;
@@ -12598,7 +12598,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             if (compInlineResult->IsFailure())
                             {
-                                return;
+                                trace_end();return;
                             }
                         }
                     }
@@ -12866,7 +12866,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTreePtr helperNode = impInitClass(&resolvedToken);
                     if (compDonotInline())
                     {
-                        return;
+                        trace_end();return;
                     }
                     if (helperNode != nullptr)
                     {
@@ -12945,14 +12945,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CORINFO_FIELD_STATIC_TLS:
 
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_STFLD_NEEDS_HELPER);
-                            return;
+                            trace_end();return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
 
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
-                            return;
+                            trace_end();return;
 
                         default:
                             break;
@@ -13167,7 +13167,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTreePtr helperNode = impInitClass(&resolvedToken);
                     if (compDonotInline())
                     {
-                        return;
+                        trace_end();return;
                     }
                     if (helperNode != nullptr)
                     {
@@ -13225,7 +13225,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = impTokenToHandle(&resolvedToken, nullptr, TRUE /*mustRestoreHandle*/);
                     if (op1 == nullptr)
                     { // compDonotInline()
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -13269,7 +13269,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Need to restore array classes before creating array objects on the heap
                         op1 = impTokenToHandle(&resolvedToken, NULL, TRUE /*mustRestoreHandle*/);
                         if (op1 == NULL) // compDonotInline()
-                            return;
+                            {trace_end();return;}
                     }
                 }
 
@@ -13355,7 +13355,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
                     if (op2 == nullptr)
                     { // compDonotInline()
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -13391,7 +13391,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         op2 = impTokenToHandle(&resolvedToken, NULL, FALSE);
                         if (op2 == NULL) // compDonotInline()
-                            return;
+                            {trace_end();return;}
                     }
                 }
 
@@ -13402,7 +13402,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 if (compDonotInline())
                 {
-                    return;
+                    trace_end();return;
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -13420,7 +13420,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impTokenToHandle(&resolvedToken);
                 if (op2 == nullptr)
                 { // compDonotInline()
-                    return;
+                    trace_end();return;
                 }
 
                 if (tiVerificationNeeded)
@@ -13509,7 +13509,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impTokenToHandle(&resolvedToken, nullptr, TRUE);
                 if (op1 == nullptr)
                 { // compDonotInline()
-                    return;
+                    trace_end();return;
                 }
 
                 helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
@@ -13550,7 +13550,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impTokenToHandle(&resolvedToken, &runtimeLookup);
                 if (op2 == nullptr)
                 { // compDonotInline()
-                    return;
+                    trace_end();return;
                 }
 
                 // Run this always so we can get access exceptions even with SkipVerification.
@@ -13628,7 +13628,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
                     { // compDonotInline()
-                        return;
+                        trace_end();return;
                     }
                     args = gtNewArgList(op2, op1);
                     op1  = gtNewHelperCallNode(helper, TYP_VOID, 0, args);
@@ -13839,7 +13839,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impImportAndPushBox(&resolvedToken);
                 if (compDonotInline())
                 {
-                    return;
+                    trace_end();return;
                 }
             }
             break;
@@ -13877,7 +13877,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
                     if (op2 == nullptr)
                     { // compDonotInline()
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -13919,7 +13919,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         op2 = impTokenToHandle(&resolvedToken, NULL, FALSE);
                         if (op2 == NULL) // compDonotInline()
-                            return;
+                            {trace_end();return;}
                     }
                 }
 
@@ -13930,7 +13930,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 if (compDonotInline())
                 {
-                    return;
+                    trace_end();return;
                 }
 
                 /* Push the result back on the stack */
@@ -13952,7 +13952,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         /* if not, just don't inline the method */
 
                         compInlineResult->NoteFatal(InlineObservation::CALLEE_THROW_WITH_INVALID_STACK);
-                        return;
+                        trace_end();return;
                     }
 
                     /* Don't inline non-void conditionals that have a throw in one of the branches */
@@ -13966,7 +13966,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (seenConditionalJump && (impInlineInfo->inlineCandidateInfo->fncRetType != TYP_VOID))
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_CONDITIONAL_THROW);
-                        return;
+                        trace_end();return;
                     }
                 }
 
@@ -14216,7 +14216,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impTokenToHandle(&resolvedToken, nullptr, TRUE);
                 if (op2 == nullptr)
                 { // compDonotInline()
-                    return;
+                    trace_end();return;
                 }
 
                 if (tiVerificationNeeded)
@@ -14391,7 +14391,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     assert(!insertLdloc);
 
-    return;
+    trace_end();return;
 #undef _impResolveToken
 }
 #ifdef _PREFAST_
@@ -16644,7 +16644,7 @@ void Compiler::impCheckCanInline(GenTreePtr             call,
                                  CORINFO_CONTEXT_HANDLE exactContextHnd,
                                  InlineCandidateInfo**  ppInlineCandidateInfo,
                                  InlineResult*          inlineResult)
-{
+{trace_begin(__FUNCTION__);
     // Either EE or JIT might throw exceptions below.
     // If that happens, just don't inline the method.
 
@@ -16807,9 +16807,9 @@ void Compiler::impCheckCanInline(GenTreePtr             call,
     {
         param.result->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
     }
-}
-
-void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
+trace_end();}
+      
+void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
                                       GenTreePtr    curArgVal,
                                       unsigned      argNum,
                                       InlineResult* inlineResult)
@@ -16927,7 +16927,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
  */
 
 void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
-{
+{trace_begin(__FUNCTION__);
     assert(!compIsForInlining());
 
     GenTreePtr           call         = pInlineInfo->iciCall;
@@ -16959,7 +16959,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         if (inlineResult->IsFailure())
         {
-            return;
+            trace_end();return;
         }
 
         /* Increment the argument count */
@@ -16996,7 +16996,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         if (inlineResult->IsFailure())
         {
-            return;
+            trace_end();return;
         }
 
         /* Increment the argument count */
@@ -17054,7 +17054,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             {
                 /* The argument cannot be bashed into a ref (see bug 750871) */
                 inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_REF);
-                return;
+                trace_end();return;
             }
 
             /* This can only happen with byrefs <-> ints/shorts */
@@ -17080,7 +17080,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 {
                     /* Arguments 'int <- byref' cannot be bashed */
                     inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
-                    return;
+                    trace_end();return;
                 }
             }
         }
@@ -17134,7 +17134,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             if (!isPlausibleTypeMatch)
             {
                 inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_TYPES_INCOMPATIBLE);
-                return;
+                trace_end();return;
             }
 
             /* Is it a narrowing or widening cast?
@@ -17161,7 +17161,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                     {
                         /* Arguments 'int <- byref' cannot be changed */
                         inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
-                        return;
+                        trace_end();return;
                     }
                 }
                 else if (genTypeSize(sigType) < EA_PTRSIZE)
@@ -17229,7 +17229,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         if (isPinned)
         {
             inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_PINNED_LOCALS);
-            return;
+            trace_end();return;
         }
 
         lclVarInfo[i + argCnt].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->locals, localsSig);
@@ -17256,7 +17256,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     }
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
-}
+trace_end();}
 
 unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reason))
 {
@@ -17539,7 +17539,7 @@ BOOL Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTreePtr  ad
 void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       CORINFO_CALL_INFO*     callInfo)
-{
+{trace_begin(__FUNCTION__);
     // Let the strategy know there's another call
     impInlineRoot()->m_inlineStrategy->NoteCall();
 
@@ -17552,7 +17552,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
          * figure out why we did not set MAXOPT for this compile.
          */
         assert(!compIsForInlining());
-        return;
+        trace_end();return;
     }
 
     if (compIsForImportOnly())
@@ -17560,7 +17560,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
         // Don't bother creating the inline candidate during verification.
         // Otherwise the call to info.compCompHnd->canInline will trigger a recursive verification
         // that leads to the creation of multiple instances of Compiler.
-        return;
+        trace_end();return;
     }
 
     GenTreeCall* call = callNode->AsCall();
@@ -17570,14 +17570,14 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (opts.compDbgCode)
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
-        return;
+        trace_end();return;
     }
 
     // Don't inline if inlining into root method is disabled.
     if (InlineStrategy::IsNoInline(info.compCompHnd, info.compMethodHnd))
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
-        return;
+        trace_end();return;
     }
 
     // Inlining candidate determination needs to honor only IL tail prefix.
@@ -17585,7 +17585,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (call->IsTailPrefixedCall())
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
-        return;
+        trace_end();return;
     }
 
     // Tail recursion elimination takes precedence over inlining.
@@ -17595,13 +17595,13 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
-        return;
+        trace_end();return;
     }
 
     if ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT)
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
-        return;
+        trace_end();return;
     }
 
     /* Ignore helper calls */
@@ -17609,14 +17609,14 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (call->gtCallType == CT_HELPER)
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
-        return;
+        trace_end();return;
     }
 
     /* Ignore indirect calls */
     if (call->gtCallType == CT_INDIRECT)
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
-        return;
+        trace_end();return;
     }
 
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
@@ -17676,7 +17676,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
 #endif
 
             inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
-            return;
+            trace_end();return;
         }
     }
 
@@ -17685,7 +17685,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (opts.compNeedSecurityCheck)
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
-        return;
+        trace_end();return;
     }
 
     /* Check if we tried to inline this method before */
@@ -17693,7 +17693,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (methAttr & CORINFO_FLG_DONT_INLINE)
     {
         inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
-        return;
+        trace_end();return;
     }
 
     /* Cannot inline synchronized methods */
@@ -17701,7 +17701,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (methAttr & CORINFO_FLG_SYNCH)
     {
         inlineResult.NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
-        return;
+        trace_end();return;
     }
 
     /* Do not inline if callee needs security checks (since they would then mark the wrong frame) */
@@ -17709,7 +17709,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     if (methAttr & CORINFO_FLG_SECURITYCHECK)
     {
         inlineResult.NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
-        return;
+        trace_end();return;
     }
 
     InlineCandidateInfo* inlineCandidateInfo = nullptr;
@@ -17717,7 +17717,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
 
     if (inlineResult.IsFailure())
     {
-        return;
+        trace_end();return;
     }
 
     // The old value should be NULL
@@ -17734,7 +17734,7 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
     inlineResult.SetReported();
-}
+trace_end();}
 
 /******************************************************************************/
 // Returns true if the given intrinsic will be implemented by target-specific

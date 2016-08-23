@@ -333,18 +333,22 @@ int ExecuteManagedAssembly(
         coreclr_initialize_ptr initializeCoreCLR = (coreclr_initialize_ptr)dlsym(coreclrLib, "coreclr_initialize");
         coreclr_execute_assembly_ptr executeAssembly = (coreclr_execute_assembly_ptr)dlsym(coreclrLib, "coreclr_execute_assembly");
         coreclr_shutdown_ptr shutdownCoreCLR = (coreclr_shutdown_ptr)dlsym(coreclrLib, "coreclr_shutdown");
-
+ 
+ 
         if (initializeCoreCLR == nullptr)
         {
             fprintf(stderr, "Function coreclr_initialize not found in the libcoreclr.so\n");
+
         }
         else if (executeAssembly == nullptr)
         {
             fprintf(stderr, "Function coreclr_execute_assembly not found in the libcoreclr.so\n");
+
         }
         else if (shutdownCoreCLR == nullptr)
         {
             fprintf(stderr, "Function coreclr_shutdown not found in the libcoreclr.so\n");
+
         }
         else
         {
@@ -413,6 +417,7 @@ int ExecuteManagedAssembly(
             {
                 fprintf(stderr, "coreclr_initialize failed - status: 0x%08x\n", st);
                 exitCode = -1;
+
             }
             else 
             {
@@ -428,6 +433,7 @@ int ExecuteManagedAssembly(
                 {
                     fprintf(stderr, "coreclr_execute_assembly failed - status: 0x%08x\n", st);
                     exitCode = -1;
+
                 }
 
                 st = shutdownCoreCLR(hostHandle, domainId);
@@ -435,10 +441,13 @@ int ExecuteManagedAssembly(
                 {
                     fprintf(stderr, "coreclr_shutdown failed - status: 0x%08x\n", st);
                     exitCode = -1;
+  
                 }
+
+               
             }
         }
-
+ 
         if (dlclose(coreclrLib) != 0)
         {
             fprintf(stderr, "Warning - dlclose failed\n");
